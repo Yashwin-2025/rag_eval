@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pgvector.psycopg import register_vector
 
 from app.db.pool import get_connection
-from app.embeddings.huggingface import embed_query
+from app.embeddings.openrouter import embed_query
 
 
 @dataclass(frozen=True)

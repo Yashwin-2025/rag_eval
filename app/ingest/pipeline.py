@@ -6,12 +6,14 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pgvector.psycopg import register_vector
 
 from app.db.pool import get_connection
-from app.embeddings.huggingface import embed_documents
+from app.embeddings.openrouter import embed_documents
 
-def _chunk_id(user_id:str,doc_id:str,index:int,text:str) -> str:
-    """Generate a unique id for the chunk"""
-    raw=f"{user_id}|{doc_id}|{index}|{text}".encode()
-    
+def _chunk_id(user_id: str, doc_id: str, index: int, text: str) -> str:
+    """Generate a stable unique id for the chunk."""
+    raw = f"{user_id}|{doc_id}|{index}|{text}".encode()
+    return "chk_" + hashlib.sha256(raw).hexdigest()[:32]
+
+
 def chunk_documents(raw_text: str, doc_id: str, user_id: str) -> list[Document]:
     splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=150)
     docs=splitter.create_documents([raw_text])
@@ -41,10 +43,19 @@ def upsert_chunks(documents: list[Document], embeddings: list[list[float]]) -> N
 
     with get_connection() as conn:
         register_vector(conn)
-        rows: list[tuple[Any,...]]=[]
-        for doc,emb in zip(documents, embeddings):
+        rows: list[tuple[Any, ...]] = []
+        for doc, emb in zip(documents, embeddings, strict=True):
             meta = {k: v for k, v in doc.metadata.items() if k not in {"chunk_id", "user_id", "doc_id"}}
-            rows.append((doc.metadata['chunk_id'], doc.metadata['user_id'], doc.metadata['doc_id'], doc.page_content, emb, json.dumps(meta)))
-    with conn.cursor() as cur:
-        cur.executemany(sql, rows)
-    conn.commit()
+            rows.append(
+                (
+                    doc.metadata["chunk_id"],
+                    doc.metadata["user_id"],
+                    doc.metadata["doc_id"],
+                    doc.page_content,
+                    emb,
+                    json.dumps(meta),
+                )
+            )
+        with conn.cursor() as cur:
+            cur.executemany(sql, rows)
+        conn.commit()

@@ -1,14 +1,14 @@
-# Chatbot RAG (skeleton)
+# Chatbot RAG
 
-This repository is a **starter layout** for a retrieval-augmented generation (RAG) pipeline in Python: documents are parsed (intended for [Docling](https://github.com/docling-project/docling)), chunked, embedded with **Hugging Face** models, stored in **PostgreSQL** with the **[pgvector](https://github.com/pgvector/pgvector)** extension, and retrieved with **per-user isolation**. [LangChain](https://python.langchain.com/) types are used where helpful (`Document`, `Embeddings`, optional chains).
+This repository is a RAG-oriented Python project: documents are parsed with [Docling](https://github.com/docling-project/docling), chunked, embedded with **Hugging Face** models, stored in **PostgreSQL** with the **[pgvector](https://github.com/pgvector/pgvector)** extension, and retrieved with **per-user** `user_id` filtering. [LangChain](https://python.langchain.com/) is used for documents, embeddings, text splitting, and an LCEL RAG chain helper.
 
-Most application functions are **stubs** (`...`) so you can implement ingestion, retrieval, and orchestration yourself.
+**Code reference (module-by-module):** see [docs/CURRENT_CODE.md](docs/CURRENT_CODE.md).
 
 ## What is included
 
 - **Docker Compose** — PostgreSQL 16 with pgvector; optional Python `app` service (see below).
 - **SQL schema** — `rag_chunks` table with 768-dimensional vectors and `user_id` for scoping queries.
-- **Python package** — `app/` modules for config, DB access, embeddings, ingest, retrieval, and an optional RAG chain.
+- **Python package** — Config, DB pool, Hugging Face embeddings, Docling loader, chunk/upsert pipeline, pgvector retrieval, LCEL `build_rag_chain(llm, retriever)`, and a small `main` DB smoke test.
 
 ## Prerequisites
 
@@ -68,17 +68,17 @@ chatbot/
 │   └── init.sql          # pgvector extension + rag_chunks schema
 ├── app/
 │   ├── config.py         # Settings (DB URL, embedding model, dim 768)
-│   ├── main.py           # Entry point (stub)
-│   ├── db/pool.py        # psycopg connection helpers (stubs)
+│   ├── main.py           # DB connectivity smoke test
+│   ├── db/pool.py        # psycopg connection helpers
 │   ├── embeddings/
-│   │   └── huggingface.py  # LangChain Embeddings + helpers (stubs)
+│   │   └── huggingface.py  # HuggingFaceEmbeddings + embed helpers
 │   ├── ingest/
-│   │   ├── docling_loader.py  # Docling → text (stub)
-│   │   └── pipeline.py        # chunk + upsert to DB (stubs)
+│   │   ├── docling_loader.py  # Docling → markdown text
+│   │   └── pipeline.py        # chunk + upsert into rag_chunks
 │   ├── retrieval/
-│   │   └── rbac.py       # Principal(user_id) + retrieve (stub)
+│   │   └── rbac.py       # Principal(user_id) + pgvector retrieve
 │   └── chains/
-│       └── rag.py        # Optional LCEL chain (stub)
+│       └── rag.py        # LCEL RAG chain (requires injected llm + retriever)
 ├── data/                 # Mounted volume for uploads (gitignored)
 └── tests/
 ```
@@ -100,16 +100,13 @@ If you change the embedding model dimension, update **`sql/init.sql`**, **`app/c
 
 ## Implementation notes
 
-1. **`get_settings()`** in `app/config.py` — Return a `Settings` instance (typically `Settings()`), optionally validating env at startup.
-2. **`app/db/pool.py`** — Wire `psycopg` connections or a pool; register pgvector types if you pass vectors as Python lists.
-3. **`app/embeddings/huggingface.py`** — Instantiate `langchain_huggingface` / `sentence_transformers` embeddings with output dimension **768** unless you change the schema.
-4. **`app/ingest/`** — Docling converts files to text; split with LangChain text splitters; attach `user_id` and `doc_id` in `Document.metadata` before upserting.
-5. **`app/retrieval/rbac.py`** — Embed the query, run SQL with `WHERE user_id = %s` **and** `ORDER BY embedding <=> query_vector` (or equivalent), never omit the user filter.
-6. **`app/chains/rag.py`** — Optional: build an LCEL chain that calls your retriever and your chosen LLM.
+1. **`DATABASE_URL`** is required (no default in `Settings`) — set in `.env` or the environment.
+2. **`app/chains/rag.py`** does not create an LLM; supply OpenRouter, Ollama, or another model when calling `build_rag_chain`.
+3. See **[docs/CURRENT_CODE.md](docs/CURRENT_CODE.md)** for file-by-file behavior and gaps.
 
 ## Testing
 
-`tests/` contains a placeholder test. Add tests that assert retrieval never crosses `user_id` boundaries once you implement `retrieve`.
+`tests/` contains a placeholder test. Add tests that assert retrieval never crosses `user_id` boundaries.
 
 ## License
 

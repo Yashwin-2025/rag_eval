@@ -8,7 +8,7 @@ from app.config import get_settings
 def get_connection() -> psycopg.Connection[Any]:
     # autocommit=False means transactions require explicit commit/rollback, ensuring atomicity and control; autocommit=True commits each statement immediately, which risks partial writes and inconsistent states if errors occur.
     settings = get_settings()
-    conn = psycopg.connect(settings.database)  # Establish connection to postgresdb
+    conn = psycopg.connect(settings.database_url)
     conn.autocommit = False
     return conn
 
