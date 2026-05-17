@@ -11,8 +11,11 @@ class Settings(BaseSettings):
 
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_embedding_model: str = "openai/text-embedding-3-small"
+    openrouter_chat_model: str = "openai/gpt-4o-mini"
+    openrouter_temperature: float = 0.2
     # Must match the chosen embedding model output size and sql/init.sql vector(N).
     embedding_dim: int = 1536
+    rag_top_k: int = 5
 
     openrouter_http_referer: str | None = None
     openrouter_app_title: str | None = None
