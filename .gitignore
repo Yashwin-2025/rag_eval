@@ -6,3 +6,6 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 data/
+*.db
+qdrant_data/
+test_qdrant_data/

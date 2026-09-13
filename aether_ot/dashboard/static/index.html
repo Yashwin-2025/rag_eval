@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHER-OT | 3D Cyber-Physical Digital Twin & Autonomous SOC</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#05070E',
+                        panel: '#0B0F19',
+                        panelBorder: '#1E293B',
+                        cyanGlow: '#00F0FF',
+                        emeraldGlow: '#10B981',
+                        neonRed: '#FF2E54',
+                        neonAmber: '#F59E0B',
+                        cyberPurple: '#A855F7'
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        display: ['"Space Grotesk"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js & OrbitControls for 3D Digital Twin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            background-color: #05070e;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 60%);
+            color: #F1F5F9;
+            overflow-x: hidden;
+        }
+
+        .cyber-glass {
+            background: rgba(11, 15, 25, 0.78);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(30, 41, 59, 0.7);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        .cyber-glass-glow {
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.12), inset 0 0 15px rgba(0, 240, 255, 0.05);
+        }
+
+        .cyber-glass-alert {
+            border: 1px solid rgba(255, 46, 84, 0.4);
+            box-shadow: 0 0 30px rgba(255, 46, 84, 0.2), inset 0 0 15px rgba(255, 46, 84, 0.08);
+            animation: alert-pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes alert-pulse {
+            0%, 100% { border-color: rgba(255, 46, 84, 0.6); box-shadow: 0 0 25px rgba(255, 46, 84, 0.25); }
+            50% { border-color: rgba(255, 46, 84, 0.2); box-shadow: 0 0 10px rgba(255, 46, 84, 0.1); }
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #070a12; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
+    <!-- Top Command Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-6 py-2.5 flex items-center justify-between sticky top-0 z-50 shadow-lg">
+        <div class="flex items-center space-x-5">
+            <div class="flex items-center space-x-3">
+                <div class="relative flex items-center justify-center">
+                    <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping absolute opacity-75"></div>
+                    <div class="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-cyan-500/50">
+                        <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-base tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400">AETHER-OT</h1>
+                    <p class="text-[9px] font-mono tracking-widest text-slate-400 uppercase -mt-0.5">3D Cyber-Physical Warehouse Digital Twin</p>
+                </div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 text-[10px] font-mono rounded-full bg-slate-900 border border-slate-700/70 text-slate-300 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    Three.js 3D WebGL
+                </span>
+                <span class="px-2.5 py-0.5 text-[10px] font-mono rounded-full bg-slate-900 border border-slate-700/70 text-slate-300 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                    LangGraph ReAct
+                </span>
+                <span class="px-2.5 py-0.5 text-[10px] font-mono rounded-full bg-slate-900 border border-slate-700/70 text-slate-300 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    OpenTelemetry
+                </span>
+            </div>
+        </div>
+
+        <!-- Telemetry Status Badges -->
+        <div class="flex items-center space-x-6 text-xs font-mono">
+            <div class="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400">PLANT STATE:</span>
+                <span id="plantStateBadge" class="px-2 py-0.5 rounded font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-700/50 shadow-sm shadow-emerald-900/50 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> NOMINAL
+                </span>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400">THROUGHPUT:</span>
+                <span id="throughputValue" class="text-cyan-400 font-bold tracking-tight">142 items/hr</span>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400">MODBUS TCP:</span>
+                <span class="text-emerald-400 font-bold flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> :5020 OK
+                </span>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400">ACTIVE ALARMS:</span>
+                <span id="activeAlarmsBadge" class="px-2 py-0.5 rounded font-bold bg-slate-800 text-slate-300">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 p-5 grid grid-cols-12 gap-5 max-w-[1780px] mx-auto w-full">
+        <!-- Left Column: 3D Digital Twin Viewport & Attack Launchpad (7 cols) -->
+        <section class="col-span-12 lg:col-span-7 flex flex-col space-y-4">
+            <!-- 3D Digital Twin Panel -->
+            <div id="canvasPanel" class="cyber-glass rounded-2xl p-4 flex flex-col transition-all duration-300">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="p-1.5 rounded-lg bg-cyan-950/70 border border-cyan-800/60 text-cyan-400">
+                            <i data-lucide="box" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-display font-semibold text-sm tracking-wide text-slate-100 flex items-center gap-2">
+                                3D WAREHOUSE DIGITAL TWIN
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">THREE.JS WebGL 60FPS</span>
+                            </h2>
+                            <p class="text-[10px] font-mono text-slate-400">Left-Click: Rotate • Right-Click: Pan • Scroll: Zoom in 3D Space</p>
+                        </div>
+                    </div>
+
+                    <!-- 3D Camera Presets -->
+                    <div class="flex items-center space-x-1.5 font-mono text-[10px]">
+                        <button onclick="setCameraView('iso')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-md border border-slate-700 transition flex items-center gap-1">
+                            <i data-lucide="video" class="w-3 h-3 text-cyan-400"></i>
+                            <span>Isometric</span>
+                        </button>
+                        <button onclick="setCameraView('top')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-md border border-slate-700 transition flex items-center gap-1">
+                            <i data-lucide="compass" class="w-3 h-3 text-emerald-400"></i>
+                            <span>Top View</span>
+                        </button>
+                        <button onclick="setCameraView('agv2')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-md border border-slate-700 transition flex items-center gap-1">
+                            <i data-lucide="crosshair" class="w-3 h-3 text-red-400"></i>
+                            <span>Track AGV-02</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Three.js 3D Canvas Viewport -->
+                <div class="relative w-full aspect-[16/10] bg-slate-950 rounded-xl border border-slate-800/90 overflow-hidden shadow-2xl flex items-center justify-center">
+                    <div id="threeContainer" class="w-full h-full block"></div>
+                    
+                    <!-- 3D Viewport Floating Overlay HUD -->
+                    <div class="absolute bottom-2 left-2 text-[9px] font-mono px-2.5 py-1 rounded-md bg-black/75 border border-slate-800 text-slate-300 backdrop-blur-md flex items-center gap-3">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> 3D AGVs Live</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400"></span> Zone B Laser Fence</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Roller Conveyor</span>
+                    </div>
+                </div>
+
+                <!-- Live Physical Telemetry Strip Below Canvas -->
+                <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-800/60 font-mono text-xs">
+                    <!-- AGV-01 Card -->
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-lg p-2.5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold block flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> AGV-01 (Forklift)
+                            </span>
+                            <span id="agv1Telemetry" class="text-xs font-semibold text-slate-200">1.0 m/s | 99%</span>
+                        </div>
+                        <span id="agv1StatusBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">IDLE</span>
+                    </div>
+
+                    <!-- AGV-02 Card -->
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-lg p-2.5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold block flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400" id="agv2Dot"></span> AGV-02 (Tugger)
+                            </span>
+                            <span id="agv2Telemetry" class="text-xs font-semibold text-slate-200">1.0 m/s | 99%</span>
+                        </div>
+                        <span id="agv2StatusBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">MOVING</span>
+                    </div>
+
+                    <!-- AGV-03 Card -->
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-lg p-2.5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold block flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> AGV-03 (Lifter)
+                            </span>
+                            <span id="agv3Telemetry" class="text-xs font-semibold text-slate-200">0.0 m/s | 99%</span>
+                        </div>
+                        <span id="agv3StatusBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">IDLE</span>
+                    </div>
+
+                    <!-- Conveyor Card -->
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-lg p-2.5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold block flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400" id="convDot"></span> CONV-01
+                            </span>
+                            <span id="convTelemetry" class="text-xs font-semibold text-cyan-300">40% | 2 boxes</span>
+                        </div>
+                        <span id="convStatusBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">RUNNING</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cyberattack Simulation Launchpad -->
+            <div class="cyber-glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="p-1 rounded bg-amber-950/80 border border-amber-800/70 text-amber-400">
+                            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-display font-semibold text-xs tracking-wider uppercase text-slate-200">
+                                Real-World ICS Attack Harness (MITRE ATT&CK for ICS)
+                            </h3>
+                            <p class="text-[10px] font-mono text-slate-400">Select an exploit scenario to inject unauthorized Modbus TCP commands</p>
+                        </div>
+                    </div>
+                    <button onclick="resetSystem()" class="text-xs px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-700 transition flex items-center gap-1.5 shadow-sm">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span>Reset Plant State</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <!-- Attack 1 -->
+                    <button onclick="launchAttack(1)" id="btnAttack1" class="group p-3.5 bg-gradient-to-b from-red-950/30 to-red-950/10 hover:from-red-900/50 hover:to-red-950/30 border border-red-900/60 hover:border-red-500/80 rounded-xl text-left transition duration-200 flex flex-col justify-between shadow-lg shadow-red-950/20">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-bold text-xs text-red-400 flex items-center gap-1.5">
+                                    <i data-lucide="zap" class="w-3.5 h-3.5 text-red-400"></i>
+                                    Attack 1: AGV Speed Hack
+                                </span>
+                                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-red-900/60 text-red-300">T0855 / T0836</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1.5 group-hover:text-slate-300 leading-snug">
+                                Rogue IP 10.0.0.99 writes Modbus FC16 to Reg 40002 (2.2 m/s). Causes physical breach in Zone B and trips SENSOR-17 interlock.
+                            </p>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-red-900/40 flex items-center justify-between text-[10px] font-mono text-red-300">
+                            <span>Target: PLC-01 (AGV-02)</span>
+                            <span class="font-semibold text-red-400 group-hover:translate-x-0.5 transition">EXECUTE →</span>
+                        </div>
+                    </button>
+
+                    <!-- Attack 2 -->
+                    <button onclick="launchAttack(2)" id="btnAttack2" class="group p-3.5 bg-gradient-to-b from-amber-950/30 to-amber-950/10 hover:from-amber-900/50 hover:to-amber-950/30 border border-amber-900/60 hover:border-amber-500/80 rounded-xl text-left transition duration-200 flex flex-col justify-between shadow-lg shadow-amber-950/20">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-bold text-xs text-amber-400 flex items-center gap-1.5">
+                                    <i data-lucide="package-x" class="w-3.5 h-3.5 text-amber-400"></i>
+                                    Attack 2: Conveyor Jam
+                                </span>
+                                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-300">T0836 / T0814</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1.5 group-hover:text-slate-300 leading-snug">
+                                Overwrites conveyor motor setpoint to 100%. Exceeds packing station intake rate, causing package overflow and buffer jam.
+                            </p>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-amber-900/40 flex items-center justify-between text-[10px] font-mono text-amber-300">
+                            <span>Target: PLC-02 (CONV-01)</span>
+                            <span class="font-semibold text-amber-400 group-hover:translate-x-0.5 transition">EXECUTE →</span>
+                        </div>
+                    </button>
+
+                    <!-- Attack 3 -->
+                    <button onclick="launchAttack(3)" id="btnAttack3" class="group p-3.5 bg-gradient-to-b from-purple-950/30 to-purple-950/10 hover:from-purple-900/50 hover:to-purple-950/30 border border-purple-900/60 hover:border-purple-500/80 rounded-xl text-left transition duration-200 flex flex-col justify-between shadow-lg shadow-purple-950/20">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-bold text-xs text-purple-400 flex items-center gap-1.5">
+                                    <i data-lucide="battery-warning" class="w-3.5 h-3.5 text-purple-400"></i>
+                                    Attack 3: Battery Starvation
+                                </span>
+                                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-300">T0807</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1.5 group-hover:text-slate-300 leading-snug">
+                                Clears charging relay coils 00004-6 to 0 (Disabled). AGVs cannot dock, resulting in battery depletion and active floor stall.
+                            </p>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-purple-900/40 flex items-center justify-between text-[10px] font-mono text-purple-300">
+                            <span>Target: Dock Coils 4-6</span>
+                            <span class="font-semibold text-purple-400 group-hover:translate-x-0.5 transition">EXECUTE →</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Multi-Agent Intelligence & OTel Deck (5 cols) -->
+        <section class="col-span-12 lg:col-span-5 flex flex-col space-y-4">
+            <!-- Tabbed Intelligence Center -->
+            <div class="cyber-glass rounded-2xl p-4 flex-1 flex flex-col min-h-[620px]">
+                <!-- Tab Headers -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                    <div class="flex space-x-2">
+                        <button onclick="switchTab('dossier')" id="tabBtnDossier" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950 text-cyan-300 border border-cyan-700/60 flex items-center gap-1.5 transition">
+                            <i data-lucide="brain-circuit" class="w-3.5 h-3.5"></i>
+                            AI Incident Dossier
+                        </button>
+                        <button onclick="switchTab('otel')" id="tabBtnOtel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200 flex items-center gap-1.5 transition">
+                            <i data-lucide="activity" class="w-3.5 h-3.5 text-purple-400"></i>
+                            OTel Waterfall
+                        </button>
+                        <button onclick="switchTab('graph')" id="tabBtnGraph" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200 flex items-center gap-1.5 transition">
+                            <i data-lucide="git-fork" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            Asset Topology
+                        </button>
+                    </div>
+                    <span id="agentStatusBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">MONITORING</span>
+                </div>
+
+                <!-- LangGraph Pipeline Stage Indicator -->
+                <div class="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80 mb-3 flex items-center justify-between text-[10px] font-mono">
+                    <span class="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">LangGraph Agent Loop:</span>
+                    <div class="flex items-center space-x-1.5" id="agentPipelineIndicator">
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800" id="step-triage">Triage</span>
+                        <span class="text-slate-600">→</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-network">Network</span>
+                        <span class="text-slate-600">→</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-process">Telemetry</span>
+                        <span class="text-slate-600">→</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-qdrant">Qdrant RAG</span>
+                        <span class="text-slate-600">→</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-synthesis">Synthesis</span>
+                    </div>
+                </div>
+
+                <!-- Tab Content 1: AI Incident Dossier -->
+                <div id="tabContentDossier" class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+                    <div id="dossierPlaceholder" class="p-5 rounded-xl bg-slate-950/50 border border-dashed border-slate-800 text-slate-400 flex flex-col items-center justify-center text-center h-full min-h-[360px]">
+                        <div class="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400 mb-3">
+                            <i data-lucide="shield-check" class="w-5 h-5"></i>
+                        </div>
+                        <h4 class="font-semibold text-slate-200">Isolation Forest Watchdog Active</h4>
+                        <p class="text-[11px] text-slate-400 max-w-sm mt-1">
+                            Continuous baseline telemetry monitoring active. No abnormal cyber-physical drift detected.
+                        </p>
+                        <p class="text-[10px] font-mono text-cyan-400/80 mt-3 px-3 py-1 bg-cyan-950/40 rounded-full border border-cyan-800/40">
+                            Launch Attack 1, 2, or 3 on the left to trigger autonomous agentic root-cause triage
+                        </p>
+                    </div>
+
+                    <!-- Dynamic Dossier Container -->
+                    <div id="dossierView" class="hidden space-y-3"></div>
+                </div>
+
+                <!-- Tab Content 2: OpenTelemetry Trace Waterfall -->
+                <div id="tabContentOtel" class="hidden flex-1 overflow-y-auto space-y-2 pr-1 font-mono text-xs">
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 pb-1 border-b border-slate-800">
+                        <span>SPAN NAME & ATTRIBUTES</span>
+                        <span>LATENCY (MS)</span>
+                    </div>
+                    <div id="otelWaterfallSpans" class="space-y-1.5">
+                        <div class="p-4 text-center text-slate-500 italic text-[11px]">Collecting OTel trace spans...</div>
+                    </div>
+                </div>
+
+                <!-- Tab Content 3: Asset Topology Graph -->
+                <div id="tabContentGraph" class="hidden flex-1 overflow-y-auto pr-1 text-xs">
+                    <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-3">
+                        <span class="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
+                            <i data-lucide="network" class="w-3.5 h-3.5"></i> NetworkX Plant Blast-Radius Topology
+                        </span>
+                        <div class="space-y-2 text-[11px] font-mono text-slate-300">
+                            <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                <span class="text-cyan-400 font-bold">[OT-SW-01]</span> Industrial Switch (10.0.0.1)
+                                <div class="pl-4 text-slate-400 text-[10px] mt-1">
+                                    ↳ Connected to <span class="text-slate-200">PLC-01</span> (AGV Master: 10.0.0.11)<br>
+                                    ↳ Connected to <span class="text-slate-200">PLC-02</span> (Conveyor & Safety: 10.0.0.12)
+                                </div>
+                            </div>
+                            <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                <span class="text-cyan-400 font-bold">[PLC-01]</span> Controls AGVs via Modbus Registers
+                                <div class="pl-4 text-slate-400 text-[10px] mt-1">
+                                    ↳ Reg 40001 → AGV-01 Speed Limit<br>
+                                    ↳ Reg 40002 → AGV-02 Speed Limit<br>
+                                    ↳ Reg 40003 → AGV-03 Speed Limit
+                                </div>
+                            </div>
+                            <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                <span class="text-amber-400 font-bold">[ZONE-B]</span> Restricted Pedestrian Hazard Area
+                                <div class="pl-4 text-slate-400 text-[10px] mt-1">
+                                    ↳ Monitored by <span class="text-red-400">SENSOR-17</span> (Laser Barrier)<br>
+                                    ↳ Hardwired Interlock → Cuts power to <span class="text-cyan-300">CONV-01</span> upon overspeed (>0.8m/s)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Three.js 3D Digital Twin Engine -->
+    <script>
+        lucide.createIcons();
+
+        // UI Element References
+        const plantStateBadge = document.getElementById("plantStateBadge");
+        const throughputValue = document.getElementById("throughputValue");
+        const activeAlarmsBadge = document.getElementById("activeAlarmsBadge");
+        const canvasPanel = document.getElementById("canvasPanel");
+        const dossierPlaceholder = document.getElementById("dossierPlaceholder");
+        const dossierView = document.getElementById("dossierView");
+        const otelWaterfallSpans = document.getElementById("otelWaterfallSpans");
+        const agentStatusBadge = document.getElementById("agentStatusBadge");
+
+        let state = null;
+        let activeTab = 'dossier';
+
+        // --- 1. Three.js Scene Setup ---
+        const container = document.getElementById("threeContainer");
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x05070e);
+        scene.fog = new THREE.FogExp2(0x05070e, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(10, 24, 26);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(10, 0, 10);
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Do not go under floor
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x00f0ff, 0.8);
+        dirLight.position.set(15, 30, 20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        const purpleLight = new THREE.PointLight(0xa855f7, 0.6, 50);
+        purpleLight.position.set(0, 15, 0);
+        scene.add(purpleLight);
+
+        // --- 2. 3D Floor & Grid ---
+        const floorGeo = new THREE.PlaneGeometry(24, 24);
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x070b14,
+            roughness: 0.85,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(10, 0, 10);
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const gridHelper = new THREE.GridHelper(24, 24, 0x00f0ff, 0x1e293b);
+        gridHelper.position.set(10, 0.01, 10);
+        scene.add(gridHelper);
+
+        // --- 3. 3D Storage Racks (S1 to S10) ---
+        const rackGeo = new THREE.BoxGeometry(2.4, 2.0, 1.2);
+        const rackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, metalness: 0.5 });
+        const palletMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.7 });
+
+        for (let i = 0; i < 5; i++) {
+            const rx = 2.5 + i * 3.6;
+            // Top Row Shelves
+            createStorageRack(rx, 1.0, 2.5);
+            // Bottom Row Shelves
+            createStorageRack(rx, 1.0, 8.0);
+        }
+
+        function createStorageRack(x, y, z) {
+            const rackGroup = new THREE.Group();
+            const mesh = new THREE.Mesh(rackGeo, rackMat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            rackGroup.add(mesh);
+
+            // Pallets on rack
+            const palletGeo = new THREE.BoxGeometry(0.8, 0.6, 0.8);
+            const p1 = new THREE.Mesh(palletGeo, palletMat);
+            p1.position.set(-0.6, 0.3, 0);
+            const p2 = new THREE.Mesh(palletGeo, palletMat);
+            p2.position.set(0.6, 0.3, 0);
+            rackGroup.add(p1);
+            rackGroup.add(p2);
+
+            rackGroup.position.set(x, y, z);
+            scene.add(rackGroup);
+        }
+
+        // --- 4. 3D Conveyor Assembly ---
+        const convGroup = new THREE.Group();
+        const convBaseGeo = new THREE.BoxGeometry(7.0, 0.6, 1.6);
+        const convBaseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.6 });
+        const convBase = new THREE.Mesh(convBaseGeo, convBaseMat);
+        convBase.castShadow = true;
+        convGroup.add(convBase);
+
+        // Rollers
+        const rollerGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.4, 12);
+        const rollerMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3, metalness: 0.8 });
+        const rollers = [];
+        for (let r = -3.2; r <= 3.2; r += 0.4) {
+            const roller = new THREE.Mesh(rollerGeo, rollerMat);
+            roller.rotation.x = Math.PI / 2;
+            roller.position.set(r, 0.32, 0);
+            convGroup.add(roller);
+            rollers.push(roller);
+        }
+
+        // 3D Moving Boxes on Conveyor
+        const boxGeo = new THREE.BoxGeometry(0.7, 0.7, 0.7);
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
+        const convBoxes = [];
+        for (let b = 0; b < 4; b++) {
+            const bMesh = new THREE.Mesh(boxGeo, boxMat);
+            bMesh.position.set(-2.5 + b * 1.5, 0.7, 0);
+            bMesh.castShadow = true;
+            convGroup.add(bMesh);
+            convBoxes.push(bMesh);
+        }
+
+        convGroup.position.set(15.5, 0.3, 15.0);
+        scene.add(convGroup);
+
+        // --- 5. 3D Restricted Zone B (The Volumetric Laser Fence) ---
+        const zbGeo = new THREE.BoxGeometry(6.0, 2.0, 6.0);
+        const zbMat = new THREE.MeshStandardMaterial({
+            color: 0xf97316,
+            transparent: true,
+            opacity: 0.15,
+            roughness: 0.2,
+            metalness: 0.1
+        });
+        const zoneBMesh = new THREE.Mesh(zbGeo, zbMat);
+        zoneBMesh.position.set(15.0, 1.0, 7.0);
+        scene.add(zoneBMesh);
+
+        // Zone B Corner Warning Beacons
+        const beaconGeo = new THREE.CylinderGeometry(0.12, 0.12, 2.2, 16);
+        const beaconMat = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xf97316, emissiveIntensity: 0.6 });
+        const beaconPositions = [
+            [12, 1.1, 4], [18, 1.1, 4], [12, 1.1, 10], [18, 1.1, 10]
+        ];
+        const beacons = beaconPositions.map(pos => {
+            const m = new THREE.Mesh(beaconGeo, beaconMat);
+            m.position.set(pos[0], pos[1], pos[2]);
+            scene.add(m);
+            return m;
+        });
+
+        // --- 6. 3D AGVs Model Generation ---
+        const agvMeshes = {};
+
+        function create3DAGV(id, colorHex) {
+            const group = new THREE.Group();
+
+            // Main Bevel Chassis
+            const chassisGeo = new THREE.BoxGeometry(1.4, 0.5, 1.4);
+            const chassisMat = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                roughness: 0.4,
+                metalness: 0.5
+            });
+            const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+            chassis.position.y = 0.35;
+            chassis.castShadow = true;
+            group.add(chassis);
+
+            // Inner dark cabin
+            const cabinGeo = new THREE.BoxGeometry(1.0, 0.3, 1.0);
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x0b0f19, roughness: 0.8 });
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.y = 0.62;
+            group.add(cabin);
+
+            // Warning Strobe on top
+            const strobeGeo = new THREE.SphereGeometry(0.12, 16, 16);
+            const strobeMat = new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.8 });
+            const strobe = new THREE.Mesh(strobeGeo, strobeMat);
+            strobe.position.y = 0.82;
+            group.add(strobe);
+
+            // Headlight beam (Cone)
+            const lightGeo = new THREE.ConeGeometry(0.3, 1.2, 16);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.25 });
+            const headlight = new THREE.Mesh(lightGeo, lightMat);
+            headlight.rotation.x = Math.PI / 2;
+            headlight.position.set(0, 0.3, 0.9);
+            group.add(headlight);
+
+            // Wheels
+            const wheelGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.15, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
+            const w1 = new THREE.Mesh(wheelGeo, wheelMat);
+            w1.rotation.z = Math.PI / 2; w1.position.set(-0.65, 0.18, -0.4); group.add(w1);
+            const w2 = new THREE.Mesh(wheelGeo, wheelMat);
+            w2.rotation.z = Math.PI / 2; w2.position.set(0.65, 0.18, -0.4); group.add(w2);
+            const w3 = new THREE.Mesh(wheelGeo, wheelMat);
+            w3.rotation.z = Math.PI / 2; w3.position.set(-0.65, 0.18, 0.4); group.add(w3);
+            const w4 = new THREE.Mesh(wheelGeo, wheelMat);
+            w4.rotation.z = Math.PI / 2; w4.position.set(0.65, 0.18, 0.4); group.add(w4);
+
+            scene.add(group);
+            return { group, chassisMat, strobeMat };
+        }
+
+        agvMeshes["AGV-01"] = create3DAGV("AGV-01", 0x10b981);
+        agvMeshes["AGV-02"] = create3DAGV("AGV-02", 0x10b981);
+        agvMeshes["AGV-03"] = create3DAGV("AGV-03", 0x10b981);
+
+        // --- Camera Preset Transitions ---
+        function setCameraView(mode) {
+            if (mode === 'iso') {
+                camera.position.set(10, 24, 26);
+                controls.target.set(10, 0, 10);
+            } else if (mode === 'top') {
+                camera.position.set(10, 32, 10.01);
+                controls.target.set(10, 0, 10);
+            } else if (mode === 'agv2') {
+                if (state && state.agvs["AGV-02"]) {
+                    const a = state.agvs["AGV-02"];
+                    camera.position.set(a.x - 3, 6, a.y + 6);
+                    controls.target.set(a.x, 0, a.y);
+                }
+            }
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate conveyor rollers if running
+            if (state && state.conveyor.is_running) {
+                rollers.forEach(r => r.rotation.y += 0.08);
+                // Slide boxes
+                convBoxes.forEach((b, i) => {
+                    b.position.x += 0.02;
+                    if (b.position.x > 3.0) b.position.x = -3.0;
+                });
+            }
+
+            // Sync 3D AGV positions from state
+            if (state) {
+                for (const [id, agv] of Object.entries(state.agvs)) {
+                    const m = agvMeshes[id];
+                    if (m) {
+                        // Smoothly interpolate position
+                        m.group.position.x += (agv.x - m.group.position.x) * 0.25;
+                        m.group.position.z += (agv.y - m.group.position.z) * 0.25;
+
+                        // Rotate towards heading
+                        const dx = agv.target_x - agv.x;
+                        const dz = agv.target_y - agv.y;
+                        if (Math.hypot(dx, dz) > 0.1) {
+                            const targetAngle = Math.atan2(dx, dz);
+                            m.group.rotation.y += (targetAngle - m.group.rotation.y) * 0.15;
+                        }
+
+                        // Color update if hacked or stopped
+                        if (agv.safety_halt) {
+                            m.chassisMat.color.setHex(0xef4444);
+                            m.strobeMat.color.setHex(0xef4444);
+                            m.strobeMat.emissive.setHex(0xef4444);
+                        } else {
+                            m.chassisMat.color.setHex(0x10b981);
+                            m.strobeMat.color.setHex(0x10b981);
+                            m.strobeMat.emissive.setHex(0x10b981);
+                        }
+                    }
+                }
+
+                // Zone B hazard beacon pulse
+                const isTripped = state.sensors["SENSOR-17"].tripped;
+                zoneBMesh.material.color.setHex(isTripped ? 0xef4444 : 0xf97316);
+                zoneBMesh.material.opacity = isTripped ? 0.35 + Math.sin(Date.now() / 150) * 0.1 : 0.15;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Responsive resize
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // --- WebSocket Telemetry & HUD Sync ---
+        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/telemetry`;
+        let socket = new WebSocket(wsUrl);
+
+        socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "state_update") {
+                state = msg.data;
+                updateHUD();
+                if (msg.traces) renderTraces(msg.traces);
+            } else if (msg.type === "incident_dossier") {
+                renderDossier(msg.data);
+            }
+        };
+
+        socket.onclose = () => {
+            setTimeout(() => { socket = new WebSocket(wsUrl); }, 1500);
+        };
+
+        function updateHUD() {
+            if (!state) return;
+            const alarms = state.alarms || [];
+            activeAlarmsBadge.innerText = alarms.length;
+
+            if (alarms.length > 0) {
+                plantStateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span> CRITICAL INTERLOCK`;
+                plantStateBadge.className = "px-2 py-0.5 rounded font-bold bg-red-950 text-red-400 border border-red-700 shadow-sm shadow-red-900/50 flex items-center gap-1";
+                canvasPanel.className = "cyber-glass cyber-glass-alert rounded-2xl p-4 flex flex-col transition-all duration-300";
+            } else if (state.anomaly && state.anomaly.is_anomaly) {
+                plantStateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> ANOMALY DRIFT`;
+                plantStateBadge.className = "px-2 py-0.5 rounded font-bold bg-amber-950 text-amber-400 border border-amber-700 shadow-sm shadow-amber-900/50 flex items-center gap-1";
+                canvasPanel.className = "cyber-glass cyber-glass-glow rounded-2xl p-4 flex flex-col transition-all duration-300";
+            } else {
+                plantStateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> NOMINAL`;
+                plantStateBadge.className = "px-2 py-0.5 rounded font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-700/50 shadow-sm shadow-emerald-900/50 flex items-center gap-1";
+                canvasPanel.className = "cyber-glass rounded-2xl p-4 flex flex-col transition-all duration-300";
+            }
+
+            throughputValue.innerText = `${state.kpis.order_throughput_hourly.toFixed(0)} items/hr`;
+
+            const agv1 = state.agvs["AGV-01"];
+            const agv2 = state.agvs["AGV-02"];
+            const agv3 = state.agvs["AGV-03"];
+            const conv = state.conveyor;
+
+            document.getElementById("agv1Telemetry").innerText = `${agv1.speed.toFixed(1)} m/s | ${agv1.battery.toFixed(0)}%`;
+            document.getElementById("agv1StatusBadge").innerText = agv1.state;
+
+            document.getElementById("agv2Telemetry").innerText = `${agv2.speed.toFixed(1)} m/s | ${agv2.battery.toFixed(0)}%`;
+            document.getElementById("agv2StatusBadge").innerText = agv2.state;
+            if (agv2.safety_halt) {
+                document.getElementById("agv2StatusBadge").className = "text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold";
+                document.getElementById("agv2Dot").className = "w-2 h-2 rounded-full bg-red-500 animate-ping";
+            } else {
+                document.getElementById("agv2StatusBadge").className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800";
+                document.getElementById("agv2Dot").className = "w-2 h-2 rounded-full bg-emerald-400";
+            }
+
+            document.getElementById("agv3Telemetry").innerText = `${agv3.speed.toFixed(1)} m/s | ${agv3.battery.toFixed(0)}%`;
+            document.getElementById("agv3StatusBadge").innerText = agv3.state;
+
+            document.getElementById("convTelemetry").innerText = `${conv.speed_pct.toFixed(0)}% | ${conv.boxes_on_belt} boxes`;
+            document.getElementById("convStatusBadge").innerText = conv.is_running ? "RUNNING" : "HALTED";
+            document.getElementById("convStatusBadge").className = conv.is_running ? "text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800" : "text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold";
+            document.getElementById("convDot").className = conv.is_running ? "w-2 h-2 rounded-full bg-cyan-400" : "w-2 h-2 rounded-full bg-red-500";
+        }
+
+        // --- Tabs Controller ---
+        function switchTab(tabId) {
+            activeTab = tabId;
+            ['dossier', 'otel', 'graph'].forEach(t => {
+                const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                const content = document.getElementById(`tabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if (t === tabId) {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950 text-cyan-300 border border-cyan-700/60 flex items-center gap-1.5 transition";
+                    content.classList.remove("hidden");
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200 flex items-center gap-1.5 transition";
+                    content.classList.add("hidden");
+                }
+            });
+        }
+
+        // --- Render LangGraph AI Dossier ---
+        function renderDossier(dossier) {
+            dossierPlaceholder.classList.add("hidden");
+            dossierView.classList.remove("hidden");
+            agentStatusBadge.innerText = "INVESTIGATION COMPLETE";
+            agentStatusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-red-950 border border-red-700 text-red-300 font-bold";
+
+            // Light up pipeline steps
+            ['step-triage', 'step-network', 'step-process', 'step-qdrant', 'step-synthesis'].forEach(id => {
+                const el = document.getElementById(id);
+                el.className = "px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-bold";
+            });
+
+            let mitreHtml = "";
+            (dossier.mitre_ics_mapping || []).forEach(m => {
+                mitreHtml += `<span class="px-2 py-0.5 rounded-md bg-red-950/80 text-red-300 border border-red-800 text-[10px] font-mono inline-flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> ${m.id || m.technique_id}: ${m.name || m.technique_name}
+                </span>`;
+            });
+
+            let factsHtml = "";
+            (dossier.deterministic_facts || []).forEach(f => {
+                factsHtml += `<li class="text-[11px] text-slate-300 flex items-start gap-1.5"><span class="text-cyan-400 mt-0.5">▪</span><span>${f}</span></li>`;
+            });
+
+            let actionsHtml = "";
+            (dossier.recommended_mitigation?.actions || []).forEach(a => {
+                actionsHtml += `<li class="text-[11px] text-emerald-300 flex items-start gap-1.5"><span class="text-emerald-400 mt-0.5">✓</span><span>${a}</span></li>`;
+            });
+
+            dossierView.innerHTML = `
+                <div class="p-4 rounded-xl bg-gradient-to-b from-red-950/40 to-slate-950/60 border border-red-800/80 space-y-3 shadow-xl">
+                    <div class="flex items-center justify-between border-b border-red-900/60 pb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                            <span class="font-mono font-bold text-red-400 tracking-wider text-sm">${dossier.incident_id}</span>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full bg-red-900 text-red-100 text-[10px] font-bold tracking-wider uppercase">${dossier.severity}</span>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider">Root Cause Synthesis:</span>
+                        <p class="text-xs text-slate-100 font-medium leading-relaxed mt-1 p-2.5 bg-slate-900/70 rounded-lg border border-slate-800">
+                            ${dossier.root_cause}
+                        </p>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block mb-1.5">MITRE ATT&CK for ICS Classification:</span>
+                        <div class="flex flex-wrap gap-1.5">${mitreHtml}</div>
+                    </div>
+
+                    <div class="border-t border-slate-800/80 pt-2.5">
+                        <span class="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block mb-1.5">Deterministic Verified Evidence:</span>
+                        <ul class="space-y-1.5 bg-slate-950/50 p-2.5 rounded-lg border border-slate-800">${factsHtml}</ul>
+                    </div>
+
+                    <div class="border-t border-slate-800/80 pt-2.5">
+                        <span class="text-[10px] text-emerald-400 font-mono font-semibold uppercase tracking-wider block mb-1.5">Recommended Actions (SOP-AGV-001 / IEC 62443):</span>
+                        <ul class="space-y-1.5 bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-900/50">${actionsHtml}</ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Render OpenTelemetry Traces ---
+        function renderTraces(traces) {
+            if (!traces || traces.length === 0) return;
+            otelWaterfallSpans.innerHTML = "";
+            traces.forEach(t => {
+                const isError = t.status === "ERROR";
+                const badgeColor = isError ? "bg-red-950 text-red-400 border-red-800" : "bg-purple-950/60 text-purple-300 border-purple-800/60";
+                const dotColor = isError ? "bg-red-400" : "bg-purple-400";
+                
+                otelWaterfallSpans.innerHTML += `
+                    <div class="p-2 rounded-lg border ${badgeColor} flex items-center justify-between transition hover:bg-slate-900/80">
+                        <div class="flex items-center space-x-2 truncate">
+                            <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
+                            <span class="font-bold truncate text-[11px]">${t.name}</span>
+                        </div>
+                        <span class="text-slate-400 text-[10px] shrink-0 font-bold pl-2">${t.duration_ms} ms</span>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Attack & Reset Actions ---
+        function launchAttack(id) {
+            fetch(`/api/attack/${id}`, { method: "POST" });
+        }
+
+        function resetSystem() {
+            fetch(`/api/reset`, { method: "POST" });
+            dossierView.classList.add("hidden");
+            dossierPlaceholder.classList.remove("hidden");
+            agentStatusBadge.innerText = "MONITORING";
+            agentStatusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700";
+            
+            // Reset pipeline lights
+            ['step-triage', 'step-network', 'step-process', 'step-qdrant', 'step-synthesis'].forEach(id => {
+                const el = document.getElementById(id);
+                el.className = "px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800";
+            });
+            document.getElementById("step-triage").className = "px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800";
+        }
+    </script>
+</body>
+</html>
