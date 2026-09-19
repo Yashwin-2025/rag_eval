@@ -105,18 +105,20 @@ async def simulation_tick_loop():
 
 
 async def run_auto_investigation(trigger: Dict):
-    """Runs LangGraph agent asynchronously and broadcasts incident dossier."""
+    """Runs LangGraph agent asynchronously in a worker thread so physics simulation never freezes."""
     try:
-        dossier = detective.investigate(trigger)
+        dossier = await asyncio.to_thread(detective.investigate, trigger)
         if active_websockets:
             payload = json.dumps({"type": "incident_dossier", "data": dossier})
-            for ws in active_websockets:
+            for ws in list(active_websockets):
                 try:
                     await ws.send_text(payload)
                 except Exception:
                     pass
+    except Exception as e:
+        pass
     finally:
-        await asyncio.sleep(5.0)
+        await asyncio.sleep(3.0)
         sim._investigation_in_progress = False
 
 

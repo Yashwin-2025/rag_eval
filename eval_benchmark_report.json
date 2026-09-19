@@ -1,0 +1,52 @@
+{
+  "total_scenarios": 4,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1_score": 1.0,
+  "avg_mttd_ms": 37.7,
+  "avg_mtti_ms": 38.6,
+  "avg_grounding_faithfulness": 1.0,
+  "mitre_mapping_accuracy": 1.0,
+  "scenario_details": [
+    {
+      "scenario_id": "SCEN-01",
+      "name": "AGV-02 Speed Injection into Zone B",
+      "type": "attack",
+      "detected": true,
+      "mttd_ms": 44.06,
+      "mtti_ms": 41.87,
+      "grounding_score": 1.0,
+      "mitre_correct": true
+    },
+    {
+      "scenario_id": "SCEN-02",
+      "name": "Conveyor Motor 100% Buffer Overfill",
+      "type": "attack",
+      "detected": true,
+      "mttd_ms": 49.55,
+      "mtti_ms": 35.26,
+      "grounding_score": 1.0,
+      "mitre_correct": true
+    },
+    {
+      "scenario_id": "SCEN-03",
+      "name": "Normal Package Pick & Transport",
+      "type": "benign",
+      "detected": false,
+      "mttd_ms": 29.84,
+      "mtti_ms": 0.0,
+      "grounding_score": 1.0,
+      "mitre_correct": false
+    },
+    {
+      "scenario_id": "SCEN-04",
+      "name": "Normal Conveyor Steady State Transfer",
+      "type": "benign",
+      "detected": false,
+      "mttd_ms": 27.52,
+      "mtti_ms": 0.0,
+      "grounding_score": 1.0,
+      "mitre_correct": false
+    }
+  ]
+}
