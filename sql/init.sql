@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- 1536 dims: must match OpenRouter embedding model output (see app/config.py embedding_dim)
+-- 1024 dims: must match OpenRouter embedding model output (see app/config.py embedding_dim)
 -- Isolation: one user_id per row; retrieval must always filter by authenticated user_id.
 CREATE TABLE IF NOT EXISTS rag_chunks (
     id              BIGSERIAL PRIMARY KEY,
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
     user_id         TEXT NOT NULL,
     doc_id          TEXT NOT NULL,
     content         TEXT NOT NULL,
-    embedding       vector(1536) NOT NULL,
+    embedding       vector(1024) NOT NULL,
     metadata        JSONB NOT NULL DEFAULT '{}',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     openrouter_chat_model: str = "openai/gpt-4o-mini"
     openrouter_temperature: float = 0.2
     # Must match the chosen embedding model output size and sql/init.sql vector(N).
-    embedding_dim: int = 1536
+    embedding_dim: int = 1024
     rag_top_k: int = 5
 
     openrouter_http_referer: str | None = None

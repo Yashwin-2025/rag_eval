@@ -6,7 +6,9 @@ Connects to OpenRouter API (0 MB local RAM) with safe local deterministic fallba
 
 from typing import Dict, List, Optional, Any, TypedDict
 import json
+import logging
 import os
+import re
 import time
 import uuid
 import httpx
@@ -15,6 +17,8 @@ from aether_ot.monitoring.tracer import otel_tracer, CyberPhysicalTracer
 from aether_ot.monitoring.historian import HistorianDB
 from aether_ot.agent.asset_graph import WarehouseAssetGraph
 from aether_ot.agent.qdrant_indexer import QdrantManualIndexer, get_qdrant_indexer
+
+logger = logging.getLogger("aether_ot.detective")
 
 
 class IncidentState(TypedDict):
@@ -154,18 +158,27 @@ class LangGraphAIDetective:
         )
         return {"telemetry_evidence": telemetry, "facts": facts}
 
+    def _resolve_source_asset(self, state: IncidentState) -> str:
+        """Determines which PLC actually governs the compromised asset, from the real trigger/evidence
+        rather than assuming AGV incidents every time."""
+        trigger_text = f"{state['trigger_alert'].get('code', '')} {state['trigger_alert'].get('message', '')}".upper()
+        if "CONV" in trigger_text or "JAM" in trigger_text or "BUFFER" in trigger_text:
+            return "PLC-02"  # Conveyor & Safety Controller
+        return "PLC-01"  # AGV Fleet Controller
+
     def _reason_topology_node(self, state: IncidentState) -> Dict:
         start_t = time.time()
-        # Blast radius analysis
-        blast = self.asset_graph.get_blast_radius("PLC-01")
+        # Blast radius analysis rooted at the PLC that actually governs the compromised asset
+        source_asset = self._resolve_source_asset(state)
+        blast = self.asset_graph.get_blast_radius(source_asset)
         facts = list(state.get("facts", []))
         facts.append(
-            f"Asset Topology: Compromise of PLC-01 directly impacts {', '.join(blast['direct_dependents'])}, "
+            f"Asset Topology: Compromise of {source_asset} directly impacts {', '.join(blast['direct_dependents'])}, "
             f"cascading to {', '.join(blast['cascade_impacts'])}"
         )
 
         CyberPhysicalTracer.record_agent_span(
-            "reason_topology", {"source": "PLC-01"}, blast, (time.time() - start_t) * 1000
+            "reason_topology", {"source": source_asset}, blast, (time.time() - start_t) * 1000
         )
         return {"asset_blast_radius": blast, "facts": facts}
 
@@ -183,23 +196,43 @@ class LangGraphAIDetective:
         return {"manual_citations": citations, "facts": facts}
 
     def _verify_mitigation_node(self, state: IncidentState) -> Dict:
-        """Digital-Twin Counterfactual Simulation: Tests proposed mitigation in sandbox before finalizing."""
+        """Digital-Twin Counterfactual Simulation: Tests proposed mitigation in sandbox before finalizing.
+        The asset under test is derived from the actual trigger/evidence, not assumed."""
         start_t = time.time()
         from aether_ot.simulator.warehouse_sim import WarehouseSimulator
+
+        source_asset = self._resolve_source_asset(state)
         sandbox_sim = WarehouseSimulator()
-        # Test if resetting speed to nominal 1.0 allows plant clearance
-        sandbox_sim.agvs["AGV-02"].speed_limit = 1.0
-        sandbox_sim.agvs["AGV-02"].speed = 1.0
-        for _ in range(10):
-            sandbox_sim.tick(dt=0.1)
-        safety_verified = not sandbox_sim.safety_sensors["SENSOR-17"].tripped
+
+        if source_asset == "PLC-02":
+            # Conveyor incident: test restoring nominal belt speed
+            sandbox_sim.conveyor.speed_pct = 40.0
+            sandbox_sim.conveyor.is_running = True
+            for _ in range(10):
+                sandbox_sim.tick(dt=0.1)
+            safety_verified = not sandbox_sim.conveyor.jammed
+            mitigation_desc = "Conveyor speed restoration to 40% (nominal)"
+        else:
+            # AGV incident: find which AGV was actually implicated (trigger message, else network evidence)
+            trigger_text = f"{state['trigger_alert'].get('code', '')} {state['trigger_alert'].get('message', '')}"
+            evidence_text = " ".join(f.get("note", "") for f in state.get("network_evidence", []) if isinstance(f, dict))
+            match = re.search(r"AGV-0\d", trigger_text) or re.search(r"AGV-0\d", evidence_text)
+            target_agv = match.group(0) if match else "AGV-02"
+
+            sandbox_sim.agvs[target_agv].speed_limit = 1.0
+            sandbox_sim.agvs[target_agv].speed = 1.0
+            for _ in range(10):
+                sandbox_sim.tick(dt=0.1)
+            safety_verified = not sandbox_sim.safety_sensors["SENSOR-17"].tripped
+            mitigation_desc = f"{target_agv} setpoint restoration to 1.0 m/s"
 
         facts = list(state.get("facts", []))
         facts.append(
-            f"Counterfactual Digital-Twin Check: Setpoint restoration to 1.0 m/s tested safe (Zone B trip risk: {'LOW' if safety_verified else 'HIGH'})."
+            f"Counterfactual Digital-Twin Check: {mitigation_desc} tested safe "
+            f"(residual trip risk: {'LOW' if safety_verified else 'HIGH'})."
         )
         CyberPhysicalTracer.record_agent_span(
-            "verify_mitigation_safety", {"sandbox_ticks": 10}, {"safety_verified": safety_verified}, (time.time() - start_t) * 1000
+            "verify_mitigation_safety", {"sandbox_ticks": 10, "source_asset": source_asset}, {"safety_verified": safety_verified}, (time.time() - start_t) * 1000
         )
         return {"facts": facts}
 
@@ -279,8 +312,14 @@ Return ONLY valid JSON.
                     data = res.json()
                     content = data["choices"][0]["message"]["content"]
                     return json.loads(content)
-        except Exception as e:
-            pass
+                logger.warning(
+                    "OpenRouter call failed (status %s), falling back to deterministic synthesizer: %s",
+                    res.status_code, res.text[:500],
+                )
+        except httpx.HTTPError as e:
+            logger.warning("OpenRouter request error, falling back to deterministic synthesizer: %s", e)
+        except (KeyError, json.JSONDecodeError) as e:
+            logger.warning("OpenRouter response was not the expected JSON shape, falling back to deterministic synthesizer: %s", e)
         return None
 
     def _deterministic_synthesizer(self, state: IncidentState) -> Dict:

@@ -5,6 +5,7 @@ Stores real-time cyber telemetry, Modbus transactions, and incident dossiers (<5
 
 import sqlite3
 import json
+import threading
 import time
 from typing import Dict, List, Optional, Any
 from pathlib import Path
@@ -13,15 +14,24 @@ from pathlib import Path
 class HistorianDB:
     def __init__(self, db_path: str = "aether_ot_historian.db"):
         self.db_path = db_path
+        self._lock = threading.Lock()
+        # One persistent, cross-thread connection instead of connect()-per-call: the tick loop,
+        # the LangGraph detective thread, and FastAPI's threadpool routes all hit this DB, and
+        # reopening a connection (+ implicit fsync on commit) on every insert was the main source
+        # of tick stutter under load. WAL + NORMAL trade a small durability window (last commit
+        # can be lost on OS crash, not on process crash) for avoiding fsync-per-write.
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._conn.execute("PRAGMA busy_timeout=5000")
         self._init_db()
 
     def _get_conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        return self._conn
 
     def _init_db(self):
-        with self._get_conn() as conn:
+        with self._lock, self._get_conn() as conn:
             cursor = conn.cursor()
             # 1. Telemetry Time-Series
             cursor.execute("""
@@ -83,7 +93,7 @@ class HistorianDB:
         s17 = state["sensors"]["SENSOR-17"]
         kpis = state["kpis"]
 
-        with self._get_conn() as conn:
+        with self._lock, self._get_conn() as conn:
             conn.cursor().execute("""
                 INSERT INTO telemetry (
                     timestamp, agv1_speed, agv1_batt, agv1_x, agv1_y,
@@ -103,7 +113,7 @@ class HistorianDB:
             conn.commit()
 
     def log_network_event(self, client_ip: str, function_code: int, register: int, value: float, is_authorized: bool, note: str = ""):
-        with self._get_conn() as conn:
+        with self._lock, self._get_conn() as conn:
             conn.cursor().execute("""
                 INSERT INTO network_events (
                     timestamp, client_ip, function_code, register_address, payload_value, is_authorized, note
@@ -113,7 +123,7 @@ class HistorianDB:
 
     def query_recent_telemetry(self, seconds: float = 60.0, limit: int = 50) -> List[Dict]:
         min_ts = time.time() - seconds
-        with self._get_conn() as conn:
+        with self._lock, self._get_conn() as conn:
             rows = conn.cursor().execute("""
                 SELECT * FROM telemetry WHERE timestamp >= ? ORDER BY timestamp DESC LIMIT ?
             """, (min_ts, limit)).fetchall()
@@ -121,14 +131,14 @@ class HistorianDB:
 
     def query_network_events(self, seconds: float = 120.0, limit: int = 50) -> List[Dict]:
         min_ts = time.time() - seconds
-        with self._get_conn() as conn:
+        with self._lock, self._get_conn() as conn:
             rows = conn.cursor().execute("""
                 SELECT * FROM network_events WHERE timestamp >= ? ORDER BY timestamp DESC LIMIT ?
             """, (min_ts, limit)).fetchall()
             return [dict(r) for r in rows]
 
     def save_incident(self, incident: Dict):
-        with self._get_conn() as conn:
+        with self._lock, self._get_conn() as conn:
             conn.cursor().execute("""
                 INSERT OR REPLACE INTO incidents (
                     incident_id, timestamp, severity, root_cause, mitre_ttp, confidence, dossier_json
@@ -145,7 +155,7 @@ class HistorianDB:
             conn.commit()
 
     def get_latest_incidents(self, limit: int = 10) -> List[Dict]:
-        with self._get_conn() as conn:
+        with self._lock, self._get_conn() as conn:
             rows = conn.cursor().execute("""
                 SELECT dossier_json FROM incidents ORDER BY timestamp DESC LIMIT ?
             """, (limit,)).fetchall()

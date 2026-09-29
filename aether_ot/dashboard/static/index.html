@@ -439,6 +439,16 @@
         const dossierView = document.getElementById("dossierView");
         const otelWaterfallSpans = document.getElementById("otelWaterfallSpans");
         const agentStatusBadge = document.getElementById("agentStatusBadge");
+        const agv1TelEl = document.getElementById("agv1Telemetry");
+        const agv1StatusEl = document.getElementById("agv1StatusBadge");
+        const agv2TelEl = document.getElementById("agv2Telemetry");
+        const agv2StatusEl = document.getElementById("agv2StatusBadge");
+        const agv2DotEl = document.getElementById("agv2Dot");
+        const agv3TelEl = document.getElementById("agv3Telemetry");
+        const agv3StatusEl = document.getElementById("agv3StatusBadge");
+        const convTelEl = document.getElementById("convTelemetry");
+        const convStatusEl = document.getElementById("convStatusBadge");
+        const convDotEl = document.getElementById("convDot");
 
         let state = null;
         let activeTab = 'dossier';
@@ -452,11 +462,13 @@
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
         camera.position.set(10, 24, 26);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+        // Lighter render preset: shadow mapping + antialiasing + high-DPI supersampling are the
+        // most expensive parts of this scene on integrated/weaker GPUs. Disabling them costs some
+        // visual polish (flatter lighting, slightly softer edges) for materially better framerate.
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "high-performance" });
         renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.BasicShadowMap;
+        renderer.setPixelRatio(1);
+        renderer.shadowMap.enabled = false;
         container.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -471,9 +483,6 @@
 
         const dirLight = new THREE.DirectionalLight(0x00f0ff, 0.8);
         dirLight.position.set(15, 30, 20);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
         const purpleLight = new THREE.PointLight(0xa855f7, 0.6, 50);
@@ -776,26 +785,26 @@
             const agv3 = state.agvs["AGV-03"];
             const conv = state.conveyor;
 
-            document.getElementById("agv1Telemetry").innerText = `${agv1.speed.toFixed(1)} m/s | ${agv1.battery.toFixed(0)}%`;
-            document.getElementById("agv1StatusBadge").innerText = agv1.state;
+            agv1TelEl.innerText = `${agv1.speed.toFixed(1)} m/s | ${agv1.battery.toFixed(0)}%`;
+            agv1StatusEl.innerText = agv1.state;
 
-            document.getElementById("agv2Telemetry").innerText = `${agv2.speed.toFixed(1)} m/s | ${agv2.battery.toFixed(0)}%`;
-            document.getElementById("agv2StatusBadge").innerText = agv2.state;
+            agv2TelEl.innerText = `${agv2.speed.toFixed(1)} m/s | ${agv2.battery.toFixed(0)}%`;
+            agv2StatusEl.innerText = agv2.state;
             if (agv2.safety_halt) {
-                document.getElementById("agv2StatusBadge").className = "text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold";
-                document.getElementById("agv2Dot").className = "w-2 h-2 rounded-full bg-red-500 animate-ping";
+                agv2StatusEl.className = "text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold";
+                agv2DotEl.className = "w-2 h-2 rounded-full bg-red-500 animate-ping";
             } else {
-                document.getElementById("agv2StatusBadge").className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800";
-                document.getElementById("agv2Dot").className = "w-2 h-2 rounded-full bg-emerald-400";
+                agv2StatusEl.className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800";
+                agv2DotEl.className = "w-2 h-2 rounded-full bg-emerald-400";
             }
 
-            document.getElementById("agv3Telemetry").innerText = `${agv3.speed.toFixed(1)} m/s | ${agv3.battery.toFixed(0)}%`;
-            document.getElementById("agv3StatusBadge").innerText = agv3.state;
+            agv3TelEl.innerText = `${agv3.speed.toFixed(1)} m/s | ${agv3.battery.toFixed(0)}%`;
+            agv3StatusEl.innerText = agv3.state;
 
-            document.getElementById("convTelemetry").innerText = `${conv.speed_pct.toFixed(0)}% | ${conv.boxes_on_belt} boxes`;
-            document.getElementById("convStatusBadge").innerText = conv.is_running ? "RUNNING" : "HALTED";
-            document.getElementById("convStatusBadge").className = conv.is_running ? "text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800" : "text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold";
-            document.getElementById("convDot").className = conv.is_running ? "w-2 h-2 rounded-full bg-cyan-400" : "w-2 h-2 rounded-full bg-red-500";
+            convTelEl.innerText = `${conv.speed_pct.toFixed(0)}% | ${conv.boxes_on_belt} boxes`;
+            convStatusEl.innerText = conv.is_running ? "RUNNING" : "HALTED";
+            convStatusEl.className = conv.is_running ? "text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800" : "text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold";
+            convDotEl.className = conv.is_running ? "w-2 h-2 rounded-full bg-cyan-400" : "w-2 h-2 rounded-full bg-red-500";
         }
 
         // --- Tabs Controller ---
@@ -880,15 +889,20 @@
         }
 
         // --- Render OpenTelemetry Traces ---
+        let lastTraceSignature = "";
         function renderTraces(traces) {
             if (!traces || traces.length === 0) return;
-            otelWaterfallSpans.innerHTML = "";
-            traces.forEach(t => {
+            // Arrives every tick (10Hz) but the trace list itself rarely changes between ticks —
+            // skip the rebuild entirely when nothing's new instead of re-rendering unconditionally.
+            const signature = traces.map(t => `${t.name}:${t.duration_ms}:${t.status}`).join("|");
+            if (signature === lastTraceSignature) return;
+            lastTraceSignature = signature;
+
+            otelWaterfallSpans.innerHTML = traces.map(t => {
                 const isError = t.status === "ERROR";
                 const badgeColor = isError ? "bg-red-950 text-red-400 border-red-800" : "bg-purple-950/60 text-purple-300 border-purple-800/60";
                 const dotColor = isError ? "bg-red-400" : "bg-purple-400";
-                
-                otelWaterfallSpans.innerHTML += `
+                return `
                     <div class="p-2 rounded-lg border ${badgeColor} flex items-center justify-between transition hover:bg-slate-900/80">
                         <div class="flex items-center space-x-2 truncate">
                             <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
@@ -897,7 +911,7 @@
                         <span class="text-slate-400 text-[10px] shrink-0 font-bold pl-2">${t.duration_ms} ms</span>
                     </div>
                 `;
-            });
+            }).join("");
         }
 
         // --- Attack & Reset Actions ---

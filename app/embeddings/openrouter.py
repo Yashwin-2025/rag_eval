@@ -17,6 +17,7 @@ def get_embeddings() -> Embeddings:
 
     return OpenAIEmbeddings(
         model=s.openrouter_embedding_model,
+        dimensions=s.embedding_dim,
         openai_api_key=s.openrouter_api_key,
         openai_api_base=s.openrouter_base_url,
         check_embedding_ctx_length=False,

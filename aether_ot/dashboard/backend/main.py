@@ -5,6 +5,7 @@ Streams live 2D warehouse kinematics, Modbus registers, OTel traces, and AI inci
 
 import asyncio
 import json
+import logging
 import os
 import time
 from typing import Dict, List
@@ -22,6 +23,8 @@ from aether_ot.monitoring.historian import HistorianDB
 from aether_ot.monitoring.tracer import get_trace_buffer, CyberPhysicalTracer
 from aether_ot.attacks.attack_harness import WarehouseAttackHarness
 from aether_ot.agent.ai_detective import LangGraphAIDetective
+
+logger = logging.getLogger("aether_ot.dashboard")
 
 app = FastAPI(title="AETHER-OT Autonomous Warehouse Cyber SOC", version="1.0.0")
 
@@ -52,9 +55,13 @@ async def startup_event():
     asyncio.create_task(plc_bridge.run_server())
 
 
+TICK_INTERVAL = 0.1  # target 10Hz
+
+
 async def simulation_tick_loop():
     """Continuous 10Hz cyber-physical simulation and state broadcast loop."""
     step_count = 0
+    next_tick = time.monotonic()
     while True:
         try:
             # 1. Sync Modbus register setpoints into simulation
@@ -72,36 +79,42 @@ async def simulation_tick_loop():
             eval_res = watchdog.evaluate(state)
             state["anomaly"] = eval_res
 
-            # 5. Log telemetry every 1 second (10 ticks)
+            # 5. Log telemetry every 1 second (10 ticks) — fire-and-forget onto a worker thread
+            # so the blocking SQLite write never stalls this tick's broadcast (was the main
+            # source of dashboard stutter: sqlite3.connect()+commit() ran inline on the event loop).
             step_count += 1
             if step_count % 10 == 0:
-                historian.log_telemetry(state)
+                asyncio.create_task(asyncio.to_thread(historian.log_telemetry, state))
 
             # 6. Auto-trigger LangGraph Detective if critical alarm occurs
             if state["alarms"] and not getattr(sim, "_investigation_in_progress", False):
                 sim._investigation_in_progress = True
                 asyncio.create_task(run_auto_investigation(state["alarms"][0]))
 
-            # 7. Broadcast via WebSockets to connected dashboards
+            # 7. Broadcast via WebSockets to connected dashboards, concurrently rather than
+            # one-at-a-time (sequential awaits meant each extra dashboard tab added latency
+            # to every other tab's update).
             if active_websockets:
                 payload = json.dumps({
                     "type": "state_update",
                     "data": state,
                     "traces": get_trace_buffer().get_recent_traces(limit=8)
                 })
-                dead_sockets = []
-                for ws in active_websockets:
-                    try:
-                        await ws.send_text(payload)
-                    except Exception:
-                        dead_sockets.append(ws)
-                for ws in dead_sockets:
-                    active_websockets.remove(ws)
+                results = await asyncio.gather(
+                    *(ws.send_text(payload) for ws in active_websockets),
+                    return_exceptions=True,
+                )
+                for ws, result in zip(list(active_websockets), results):
+                    if isinstance(result, Exception) and ws in active_websockets:
+                        active_websockets.remove(ws)
 
-        except Exception as e:
-            pass
+        except Exception:
+            logger.exception("simulation_tick_loop: unhandled error during tick %d", step_count)
 
-        await asyncio.sleep(0.1)
+        # Sleep for whatever's left of this tick's budget, so a slow tick doesn't push every
+        # subsequent tick later too (fixed sleep(0.1) after processing would compound drift).
+        next_tick += TICK_INTERVAL
+        await asyncio.sleep(max(0.0, next_tick - time.monotonic()))
 
 
 async def run_auto_investigation(trigger: Dict):
@@ -110,13 +123,12 @@ async def run_auto_investigation(trigger: Dict):
         dossier = await asyncio.to_thread(detective.investigate, trigger)
         if active_websockets:
             payload = json.dumps({"type": "incident_dossier", "data": dossier})
-            for ws in list(active_websockets):
-                try:
-                    await ws.send_text(payload)
-                except Exception:
-                    pass
-    except Exception as e:
-        pass
+            await asyncio.gather(
+                *(ws.send_text(payload) for ws in active_websockets),
+                return_exceptions=True,
+            )
+    except Exception:
+        logger.exception("run_auto_investigation failed for trigger: %s", trigger)
     finally:
         await asyncio.sleep(3.0)
         sim._investigation_in_progress = False

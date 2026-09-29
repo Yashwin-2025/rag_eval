@@ -5,12 +5,21 @@ Bootstraps Qdrant embedded index, Modbus TCP server, warehouse simulation, and F
 
 import uvicorn
 import logging
+from dotenv import load_dotenv
 from aether_ot.agent.qdrant_indexer import get_qdrant_indexer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("aether_ot.launcher")
 
 if __name__ == "__main__":
+    # Must run before aether_ot.dashboard.backend.main is imported below (by uvicorn.run),
+    # since that module builds LangGraphAIDetective() at import time and reads
+    # OPENROUTER_API_KEY from the environment then.
+    if load_dotenv():
+        logger.info("Loaded environment variables from .env")
+    else:
+        logger.warning("No .env file found — OPENROUTER_API_KEY and other settings must be set in the environment")
+
     logger.info("Initializing AETHER-OT Cyber-Physical Digital Twin...")
     # 1. Ensure Qdrant embedded collections and manuals exist
     indexer = get_qdrant_indexer("./qdrant_data")

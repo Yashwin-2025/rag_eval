@@ -7,7 +7,7 @@ This repository is a RAG-oriented Python project: documents are parsed with [Doc
 ## What is included
 
 - **Docker Compose** — PostgreSQL 16 with pgvector; optional Python `app` service (see below).
-- **SQL schema** — `rag_chunks` table with 768-dimensional vectors and `user_id` for scoping queries.
+- **SQL schema** — `rag_chunks` table with 1024-dimensional vectors and `user_id` for scoping queries.
 - **Python package** — Config, DB pool, Hugging Face embeddings, Docling loader, chunk/upsert pipeline, pgvector retrieval, LCEL `build_rag_chain(llm, retriever)`, and a small `main` DB smoke test.
 
 ## Prerequisites
@@ -52,8 +52,9 @@ docker compose up -d
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL connection string. From the host, use `localhost` and the mapped port; from the `app` service, use host `db`. |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT` | Used by Compose for the `db` service. |
-| `HUGGINGFACE_HUB_TOKEN` | Optional; required for some gated models on Hugging Face. |
-| `EMBEDDING_MODEL_NAME` | Pydantic Settings maps this to `embedding_model_name` in `app/config.py` (default: `BAAI/bge-base-en-v1.5`). |
+| `OPENROUTER_API_KEY` | Required. Used for both embeddings and chat via OpenRouter's OpenAI-compatible API. |
+| `OPENROUTER_EMBEDDING_MODEL`, `OPENROUTER_CHAT_MODEL` | OpenRouter model ids (default: `openai/text-embedding-3-small`, `openai/gpt-4o-mini`). |
+| `EMBEDDING_DIM` | Pydantic Settings maps this to `embedding_dim` in `app/config.py` (default: `1024`); passed as the OpenAI `dimensions` param when embedding. |
 
 See `.env.example` for a minimal template.
 
@@ -67,7 +68,7 @@ chatbot/
 ├── sql/
 │   └── init.sql          # pgvector extension + rag_chunks schema
 ├── app/
-│   ├── config.py         # Settings (DB URL, embedding model, dim 768)
+│   ├── config.py         # Settings (DB URL, embedding model, dim 1024)
 │   ├── main.py           # DB connectivity smoke test
 │   ├── db/pool.py        # psycopg connection helpers
 │   ├── embeddings/
@@ -91,7 +92,7 @@ Table **`rag_chunks`** (see `sql/init.sql`):
 - **`user_id`** — **Required for isolation**: every vector search must filter by the authenticated user’s id so one user cannot read another’s chunks.
 - **`doc_id`** — Logical source document identifier.
 - **`content`** — Chunk text.
-- **`embedding`** — `vector(768)`; must match the output dimension of your embedding model.
+- **`embedding`** — `vector(1024)`; must match the output dimension of your embedding model.
 - **`metadata`** — JSONB for extra fields (e.g. page, filename).
 
 Indexes: **IVFFlat** on `embedding` for cosine distance, and **B-tree** on `user_id` for filtering.
