@@ -14,7 +14,7 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from aether_ot.simulator.warehouse_sim import WarehouseSimulator
 from aether_ot.plc.modbus_server import ModbusPLCBridge
@@ -53,6 +53,19 @@ async def startup_event():
     asyncio.create_task(simulation_tick_loop())
     # Start Modbus server
     asyncio.create_task(plc_bridge.run_server())
+    # Seed SOP manuals into pgvector in the background; the detective works without them meanwhile.
+    asyncio.create_task(seed_sop_manuals())
+
+
+async def seed_sop_manuals():
+    from aether_ot.agent.sop_manuals import seed_manuals
+
+    try:
+        written = await asyncio.to_thread(seed_manuals)
+        logger.info("SOP manuals ready in pgvector (%d newly embedded).", written)
+    except Exception:
+        logger.exception("Could not seed SOP manuals (is Postgres up and OPENROUTER_API_KEY valid?). "
+                         "The detective will run without manual citations.")
 
 
 TICK_INTERVAL = 0.1  # target 10Hz
@@ -203,3 +216,18 @@ def serve_dashboard():
     if index_file.exists():
         return index_file.read_text(encoding="utf-8")
     return "<h1>AETHER-OT Dashboard building...</h1>"
+
+
+# --- RAG chatbot, served by this same app ---------------------------------------------------
+# The chatbot's API (/chat, /ingest, /user/purge, /api/responsible-ai/*) is mounted at the root
+# AFTER all routes above, so the dashboard's own routes (/, /static, /api/*, /ws/*) always win.
+# Its UI lives at /chatbot because its own "/" is shadowed by the dashboard.
+from app.api import app as chatbot_app  # noqa: E402
+
+
+@app.get("/chatbot", include_in_schema=False)
+def serve_chatbot_ui():
+    return FileResponse(Path(__file__).resolve().parents[3] / "app" / "static" / "index.html")
+
+
+app.mount("/", chatbot_app)

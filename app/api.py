@@ -24,6 +24,9 @@ app = FastAPI(title="Chatbot RAG", version="0.1.0")
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
+# user_ids whose documents are first-party (AETHER-OT SOPs, see aether_ot/agent/sop_manuals.py).
+INTERNAL_DOC_USERS = {"aether-ot"}
+
 
 def require_user_id(x_user_id: str | None = Header(default=None, alias="X-User-Id")) -> str:
     """Dev-only identity header. Replace with verified JWT/session in production."""
@@ -123,7 +126,12 @@ def chat(body: ChatRequest, principal: Principal = Depends(get_principal)) -> Ch
 
     # 4. Output Guardrails
     medical_triggered = check_medical_safety(answer)
-    copyright_triggered = check_verbatim_overlap(answer, [r["content"] for r in retrieved_rows])
+    # Our own SOP manuals are short and meant to be quoted, so the copyright check only applies
+    # to everyone else's documents.
+    copyright_triggered = (
+        principal.user_id not in INTERNAL_DOC_USERS
+        and check_verbatim_overlap(answer, [r["content"] for r in retrieved_rows])
+    )
 
     guardrail_results = {
         "pii_detected": len(pii_mapping) > 0,

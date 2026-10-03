@@ -78,3 +78,9 @@ that loop stalls the whole simulation/dashboard. The LangGraph investigation
 blocks physics ticks; follow that pattern for any other slow/blocking work added to the loop.
 `docs/industrial_ai_ot_cybersecurity_blueprint.md` has the OT/ICS domain model (Purdue levels,
 protocols, MITRE ATT&CK for ICS) the simulator and attack harness are built against.
+
+## Teach me as we go
+The owner wants to understand every part of this project.
+- When you change or explain code, say in one plain line what it does and why.
+- Name the one file worth reading next (see PROJECT.md reading order for `aether_ot/`).
+- After finishing a topic, offer a 2-3 question quiz instead of dumping more detail.

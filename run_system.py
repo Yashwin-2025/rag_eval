@@ -1,12 +1,13 @@
 """
-AETHER-OT: Root System Launcher
-Bootstraps Qdrant embedded index, Modbus TCP server, warehouse simulation, and FastAPI dashboard.
+AETHER-OT + RAG chatbot: Root System Launcher
+Bootstraps the SOP knowledge base (pgvector), Modbus TCP server, warehouse simulation, and the
+FastAPI dashboard, which also serves the RAG chatbot API.
 """
 
+import app  # noqa: F401  (must be first: blocks the slow optional `transformers` import, see app/__init__.py)
 import uvicorn
 import logging
 from dotenv import load_dotenv
-from aether_ot.agent.qdrant_indexer import get_qdrant_indexer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("aether_ot.launcher")
@@ -21,12 +22,10 @@ if __name__ == "__main__":
         logger.warning("No .env file found — OPENROUTER_API_KEY and other settings must be set in the environment")
 
     logger.info("Initializing AETHER-OT Cyber-Physical Digital Twin...")
-    # 1. Ensure Qdrant embedded collections and manuals exist
-    indexer = get_qdrant_indexer("./qdrant_data")
-    logger.info(f"Qdrant vector collection '{indexer.collection_name}' ready.")
-
-    logger.info("Starting FastAPI & WebSocket Dashboard on http://localhost:8000 ...")
+    # SOP manuals are seeded into pgvector in the background once the server is up
+    # (see startup_event in the dashboard backend), so they no longer delay startup.
+    logger.info("Starting FastAPI & WebSocket Dashboard on http://localhost:8000 (chatbot UI at /chatbot) ...")
     logger.info("Modbus TCP PLC bridge will listen on 127.0.0.1:5020 ...")
-    
-    # 2. Run FastAPI server
+
+    # Run FastAPI server
     uvicorn.run("aether_ot.dashboard.backend.main:app", host="0.0.0.0", port=8000, log_level="info")

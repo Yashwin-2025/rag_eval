@@ -354,7 +354,7 @@
                         <span class="text-slate-600">→</span>
                         <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-process">Telemetry</span>
                         <span class="text-slate-600">→</span>
-                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-qdrant">Qdrant RAG</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-qdrant">SOP RAG</span>
                         <span class="text-slate-600">→</span>
                         <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800" id="step-synthesis">Synthesis</span>
                     </div>
@@ -742,22 +742,29 @@
         // --- WebSocket Telemetry & HUD Sync ---
         const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const wsUrl = `${wsProtocol}//${window.location.host}/ws/telemetry`;
-        let socket = new WebSocket(wsUrl);
+        let socket;
 
-        socket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === "state_update") {
-                state = msg.data;
-                updateHUD();
-                if (msg.traces) renderTraces(msg.traces);
-            } else if (msg.type === "incident_dossier") {
-                renderDossier(msg.data);
-            }
-        };
+        // Reconnects re-run this whole function so every new socket gets its handlers; a bare
+        // `new WebSocket()` on close left the page frozen after any server restart.
+        function connectSocket() {
+            socket = new WebSocket(wsUrl);
 
-        socket.onclose = () => {
-            setTimeout(() => { socket = new WebSocket(wsUrl); }, 1500);
-        };
+            socket.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.type === "state_update") {
+                    state = msg.data;
+                    updateHUD();
+                    if (msg.traces) renderTraces(msg.traces);
+                } else if (msg.type === "incident_dossier") {
+                    renderDossier(msg.data);
+                }
+            };
+
+            socket.onclose = () => {
+                setTimeout(connectSocket, 1500);
+            };
+        }
+        connectSocket();
 
         function updateHUD() {
             if (!state) return;

@@ -16,7 +16,7 @@ from langgraph.graph import StateGraph, END
 from aether_ot.monitoring.tracer import otel_tracer, CyberPhysicalTracer
 from aether_ot.monitoring.historian import HistorianDB
 from aether_ot.agent.asset_graph import WarehouseAssetGraph
-from aether_ot.agent.qdrant_indexer import QdrantManualIndexer, get_qdrant_indexer
+from aether_ot.agent.sop_manuals import RagManualRetriever, get_manual_retriever
 
 logger = logging.getLogger("aether_ot.detective")
 
@@ -43,13 +43,13 @@ class LangGraphAIDetective:
         self,
         historian: Optional[HistorianDB] = None,
         asset_graph: Optional[WarehouseAssetGraph] = None,
-        indexer: Optional[QdrantManualIndexer] = None,
+        indexer: Optional[RagManualRetriever] = None,
         openrouter_api_key: Optional[str] = None,
         model_name: str = "meta-llama/llama-3.3-70b-instruct:free",
     ):
         self.historian = historian or HistorianDB()
         self.asset_graph = asset_graph or WarehouseAssetGraph()
-        self.indexer = indexer or get_qdrant_indexer()
+        self.indexer = indexer or get_manual_retriever()
         self.openrouter_api_key = openrouter_api_key or os.getenv("OPENROUTER_API_KEY", "")
         self.model_name = model_name
         self.workflow = self._compile_graph()

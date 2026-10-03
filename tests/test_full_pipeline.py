@@ -8,7 +8,6 @@ from aether_ot.monitoring.historian import HistorianDB
 from aether_ot.monitoring.tracer import get_trace_buffer, CyberPhysicalTracer
 from aether_ot.analytics.anomaly_detector import ProcessAnomalyWatchdog
 from aether_ot.agent.asset_graph import WarehouseAssetGraph
-from aether_ot.agent.qdrant_indexer import QdrantManualIndexer
 from aether_ot.agent.ai_detective import LangGraphAIDetective
 
 
@@ -35,11 +34,24 @@ def test_asset_graph_blast_radius():
     assert "AGV-02" in blast["direct_dependents"]
 
 
-def test_qdrant_manual_search():
-    indexer = QdrantManualIndexer("./test_qdrant_data")
-    hits = indexer.search_manuals("Zone B speed limit")
-    assert len(hits) > 0
-    assert any("SOP-AGV-001" in h["doc_id"] for h in hits)
+def test_rag_manual_search_maps_pgvector_rows(monkeypatch):
+    from aether_ot.agent import sop_manuals
+
+    monkeypatch.setattr(sop_manuals, "retrieve", lambda q, principal, k: [
+        {"doc_id": "SOP-AGV-001", "content": "Zone B limit", "metadata": {"title": "AGV Limits"}, "distance": 0.2}
+    ])
+    hits = sop_manuals.RagManualRetriever().search_manuals("Zone B speed limit")
+    assert hits == [{"doc_id": "SOP-AGV-001", "title": "AGV Limits", "content": "Zone B limit", "score": 0.8}]
+
+
+def test_rag_manual_search_survives_db_outage(monkeypatch):
+    from aether_ot.agent import sop_manuals
+
+    def boom(*a, **k):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(sop_manuals, "retrieve", boom)
+    assert sop_manuals.RagManualRetriever().search_manuals("anything") == []
 
 
 def test_langgraph_ai_detective_deterministic_investigation():

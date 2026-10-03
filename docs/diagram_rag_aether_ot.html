@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One app: AETHER-OT with the RAG pipeline</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width, so the
+       type ramp is never silently scaled down). This wrapper lets a narrow
+       screen scroll the diagram instead of the whole page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 1000px; display: block; }
+    /* Paper has no scrollbar, so the local scroller would clip instead of
+       scroll. Let the diagram scale down to the sheet: smaller but whole
+       beats sharp but cut off. Must come after the svg rule above - a media
+       query adds no specificity, so a later plain rule would win. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · RAG + AETHER-OT</p>
+    <h1>One app: AETHER-OT with the RAG pipeline</h1>
+
+    <!-- Replace rag-aether-ot with a unique slug for this diagram before export. -->
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="rag-aether-ot-title rag-aether-ot-desc">
+        <title id="rag-aether-ot-title">One app: AETHER-OT with the RAG pipeline</title>
+        <desc id="rag-aether-ot-desc">The AETHER-OT detective and the RAG chatbot share one server and one pgvector knowledge base of SOPs and enterprise documents.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+
+          <!-- OPTIONAL: dot-pattern background. Uncomment the <pattern> and the second <rect> below if you want the dotted paper look. -->
+          <!--
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+          -->
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <!-- <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/> -->
+
+        <path d="M168,132 H212" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M364,132 H408" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M560,132 H604" fill="none" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+<path d="M756,132 H800" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M288,260 V164" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+<path d="M484,164 V260" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M680,164 V260" fill="none" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+<path d="M800,292 H756" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="296" y="206" width="82.4" height="14" fill="#f5f5f5"/><text x="300" y="216" text-anchor="start" fill="#4f5d75" font-size="8" letter-spacing="0.1em" font-family="'Geist Mono', monospace">BAD SETPOINT</text>
+<rect x="492" y="206" width="26.6" height="14" fill="#f5f5f5"/><text x="496" y="216" text-anchor="start" fill="#4f5d75" font-size="8" letter-spacing="0.1em" font-family="'Geist Mono', monospace">LOG</text>
+<rect x="688" y="206" width="70.0" height="14" fill="#f5f5f5"/><text x="692" y="216" text-anchor="start" fill="#4f5d75" font-size="8" letter-spacing="0.1em" font-family="'Geist Mono', monospace">SOP LOOKUP</text>
+<rect x="40" y="100" width="128" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="100" width="128" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="104.0" y="126" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Warehouse sim</text>
+<text x="104.0" y="142" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">AGVs + conveyor</text>
+<text x="104.0" y="154" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">10Hz physics</text>
+<rect x="212" y="100" width="152" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="212" y="100" width="152" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="288.0" y="126" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Modbus PLC</text>
+<text x="288.0" y="142" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">TCP 127.0.0.1:5020</text>
+<text x="288.0" y="154" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">sim state as registers</text>
+<rect x="408" y="100" width="152" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="408" y="100" width="152" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="484.0" y="126" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Anomaly detector</text>
+<text x="484.0" y="142" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">Isolation Forest</text>
+<text x="484.0" y="154" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">telemetry drift</text>
+<rect x="604" y="100" width="152" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="604" y="100" width="152" height="64" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.4"/>
+<text x="680.0" y="126" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">AI detective</text>
+<text x="680.0" y="142" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">LangGraph + LLM</text>
+<text x="680.0" y="154" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">runs on alert</text>
+<rect x="800" y="100" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="800" y="100" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="880.0" y="126" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">3D dashboard</text>
+<text x="880.0" y="142" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">FastAPI + WebSocket</text>
+<text x="880.0" y="154" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">one app on :8000</text>
+<rect x="212" y="260" width="152" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="212" y="260" width="152" height="64" rx="6" fill="#ffffff" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="288.0" y="286" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Attack harness</text>
+<text x="288.0" y="302" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">simulated ICS intrusion</text>
+<text x="288.0" y="314" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">MITRE T0855/T0836</text>
+<rect x="408" y="260" width="152" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="408" y="260" width="152" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="484.0" y="286" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Historian</text>
+<text x="484.0" y="302" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">SQLite log</text>
+<text x="484.0" y="314" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">telemetry + incidents</text>
+<rect x="604" y="260" width="152" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="604" y="260" width="152" height="64" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.4"/>
+<text x="680.0" y="286" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">RAG pipeline</text>
+<text x="680.0" y="302" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">pgvector rag_chunks</text>
+<text x="680.0" y="314" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">SOPs + enterprise docs</text>
+<rect x="800" y="260" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="800" y="260" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="880.0" y="286" text-anchor="middle" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Chatbot API</text>
+<text x="880.0" y="302" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">/chat + /ingest</text>
+<text x="880.0" y="314" text-anchor="middle" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace">guardrails + audit</text>
+<line x1="40" y1="358" x2="960" y2="358" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<rect x="40" y="370" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+<text x="62" y="379" fill="#4f5d75" font-size="8" letter-spacing="0.08em" font-family="'Geist Mono', monospace">SHARED RAG + AI INVESTIGATION</text>
+<rect x="252.39999999999998" y="370" width="14" height="10" rx="2" fill="#fff" stroke="#2d3142"/>
+<text x="274.4" y="379" fill="#4f5d75" font-size="8" letter-spacing="0.08em" font-family="'Geist Mono', monospace">SYSTEM PART</text>
+<rect x="364.0" y="370" width="14" height="10" rx="2" fill="#fff" stroke="#4f5d75" stroke-dasharray="3,2"/>
+<text x="386.0" y="379" fill="#4f5d75" font-size="8" letter-spacing="0.08em" font-family="'Geist Mono', monospace">ATTACKER</text>
+
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

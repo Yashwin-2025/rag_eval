@@ -26,7 +26,7 @@ agent/ai_detective.py         LangGraph multi-agent investigator (triage → net
                                process forensics → asset blast-radius → SOP retrieval → safety
                                verification → incident dossier), backed by an LLM via OpenRouter
 agent/asset_graph.py          Graph model of warehouse assets for blast-radius reasoning
-agent/qdrant_indexer.py       Vector index (Qdrant, embedded) of operating manuals/SOPs for RAG
+agent/sop_manuals.py            SOP manuals embedded into the shared pgvector store (RAG pipeline)
 attacks/attack_harness.py     Attack scripts: e.g. write malicious speed setpoints over Modbus
                                (MITRE T0855/T0836), simulating a real ICS intrusion
 eval/eval_harness.py          Scores the detective's incident dossiers against ground truth
@@ -34,7 +34,7 @@ dashboard/backend/main.py     FastAPI + WebSocket server: pushes live sim state 
 dashboard/static/index.html   3D visualization of the warehouse + live alerts
 ```
 
-`run_system.py` boots the whole thing: Qdrant index → FastAPI/WebSocket dashboard on
+`run_system.py` boots the whole thing: SOP seeding into pgvector → FastAPI/WebSocket dashboard on
 `:8000` → Modbus PLC bridge on `127.0.0.1:5020`.
 
 **The narrative it demonstrates:** an attacker writes a bad setpoint to a PLC register over
